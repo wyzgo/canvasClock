@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style type="text/css">
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        
+        button {
+            font-size: 30px;
+            margin: 10px;
+            padding: 10px;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        input {
+            font-size: 30px;
+            width: 100px;
+            display: inline-block
+        }
+        
+        .output {
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body onload="draw();">
+    <canvas id="tutorial" width="620" height="620"></canvas>
+    <button onclick="btnclick();">生成图片</button>
+    <button onclick="download();">下载图片</button>
+    <button onclick="slice();">把图片分成：横<input type="number" id="slicew"/>份，竖<input type="number" id="sliceh"/>份</button>
+    <div class="output"></div>
+    <script>
+        function Clock(ctx, centerx, centery, radius, colorList, randomAngle) {
+
+            const scale = radius / 200; //比例尺
+            const now = new Date();
+            const hour = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+            const minutes = now.getMinutes() + now.getSeconds() / 60;
+            const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+            const fontsArr = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+            const fontsArr2 = ['N', 'W', 'S', 'E'];
+            const fontsArr3 = ['上班', '调休'];
+
+            ctx.save();
+            ctx.clearRect(centerx - radius - 10, centery - radius - 10, radius * 2 + 20, radius * 2 + 20);
+            ctx.fillStyle = 'rgb(235, 242, 248)';
+            ctx.fillRect(centerx - radius - 10, centery - radius - 10, radius * 2 + 20, radius * 2 + 20);
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            ctx.translate(centerx, centery);
+            ctx.rotate(-Math.PI / 2);
+
+
+            /**
+             * 表盘 
+             */
+            new ClockDial(-100, -100, 40, [{
+                length: 2 * scale,
+                width: 1,
+                repeat: 12,
+                color: colorList[3]
+            }, {
+                length: 5 * scale,
+                width: 2,
+                repeat: 4,
+                color: colorList[4]
+            }], colorList[10]);
+
+            new ClockDial(100, 0, 40, [{
+                length: 2 * scale,
+                width: 1,
+                repeat: 12,
+                color: colorList[5]
+            }, {
+                length: 5 * scale,
+                width: 2,
+                repeat: 4,
+                color: colorList[9]
+            }], colorList[11]);
+
+            new ClockDial(0, 0, radius, [{
+                length: 5 * scale,
+                width: 1,
+                repeat: 60,
+                color: colorList[6]
+            }, {
+                length: 15 * scale,
+                width: 2,
+                repeat: 12,
+                color: colorList[7]
+            }, {
+                length: 15 * scale,
+                width: 8,
+                repeat: 4,
+                color: colorList[8]
+            }], colorList[12]);
+
+            function ClockDial(x, y, r, Arr, color) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.translate(x, y);
+                ctx.strokeStyle = color;
+                ctx.moveTo(r, 0);
+                ctx.arc(0, 0, r, 0, Math.PI * 2, false);
+                ctx.stroke();
+                for (let i = 0; i < Arr.length; i++) {
+                    const {
+                        length,
+                        width,
+                        repeat,
+                        color
+                    } = Arr[i],
+                        angle = Math.PI * 2 / repeat;
+
+                    ctx.lineWidth = width;
+                    ctx.strokeStyle = color;
+                    for (let j = 0; j < repeat; j++) {
+                        ctx.beginPath();
+                        ctx.moveTo(r - length, 0);
+                        ctx.lineTo(r, 0);
+                        ctx.stroke();
+                        ctx.rotate(angle);
+                    }
+                }
+                ctx.restore();
+            }
+
+
+            /**
+             * 文字
+             */
+            new ClockFonts(0, 0, radius - 50, "20px serif", fontsArr, colorList[0]);
+            new ClockFonts(-100, -100, 25, "10px serif", fontsArr2, colorList[1]);
+            new ClockFonts(100, 0, 25, "10px serif", fontsArr3, colorList[2]);
+
+            function ClockFonts(x, y, r, font, fontsArr, color) {
+                const length = fontsArr.length;
+                const deg = 2 * Math.PI / length;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(Math.PI / 2);
+                ctx.beginPath();
+                ctx.font = font;
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = "middle";
+
+                for (let i = 1; i <= length; i++) {
+                    let x = Math.cos(i * deg - Math.PI / 2);
+                    let y = Math.sin(i * deg - Math.PI / 2);
+                    ctx.fillText(fontsArr[i - 1], x * r, y * r);
+                }
+                ctx.restore();
+            }
+
+
+            /**
+             * 品牌
+             */
+            new ClockBrand(-50, 50, radius / 30);
+
+            function ClockBrand(x, y, r, color) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(Math.PI / 2);
+
+                ctx.fillStyle = color || "#" + ("00000" + ((Math.random() * 16777215 + 0.5) >> 0).toString(16)).slice(-6);
+                ctx.font = '36px yahei';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = "middle";
+                ctx.beginPath();
+                ctx.fillText('ROLEX', 50, 50);
+                ctx.restore();
+            }
+
+
+            /**
+             * 指针 
+             */
+            new ClockHand(0, 0, 140 * scale, 10 * scale, 10, 'silver', 'rgba(0, 0, 0, 0.5)', 2 * Math.PI / 12 * hour);
+            new ClockHand(0, 0, 170 * scale, 20 * scale, 5, 'lightblue', 'rgba(0, 0, 0, 0.5)', 2 * Math.PI / 60 * minutes);
+            new ClockHand(0, 0, 190 * scale, 30 * scale, 2, 'red', 'rgba(0, 0, 0, 0.5)', 2 * Math.PI / 60 * seconds);
+            new ClockHand(-100, -100, 20 * scale, 10 * scale, 2, 'red', 'rgba(0, 0, 0, 0.5)', 2 * Math.PI / 60 * 20);
+            new ClockHand(100, 0, 20 * scale, 10 * scale, 2, 'red', 'rgba(0, 0, 0, 0.5)', randomAngle);
+
+            function ClockHand(x, y, handR, handReverseR, handWidth, color, shadowColor, angle) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = handWidth;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                ctx.shadowBlur = 2;
+                ctx.shadowColor = shadowColor;
+                ctx.beginPath();
+                ctx.rotate(angle);
+                ctx.moveTo(-handReverseR, 0);
+                ctx.lineTo(handR, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            /**
+             * 表芯
+             */
+            new ClockCenter(0, 0, radius / 30, 'gold');
+            new ClockCenter(-100, -100, radius / 50, '#333');
+            new ClockCenter(100, 0, radius / 50, 'green');
+
+            function ClockCenter(x, y, r, color) {
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.arc(x, y, r, 0, Math.PI * 2, false);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore();
+            window.requestAnimationFrame(function() {
+                new Clock(ctx, centerx, centery, radius, colorList, randomAngle);
+            });
+        }
+
+        function draw() {
+            const canvas = document.getElementById('tutorial');
+            if (canvas.getContext) {
+                const ctx = canvas.getContext('2d');
+                const colorList = [];
+                const randomAngle = 2 * Math.PI * Math.random();
+
+                for (let i = 0; i < 100; i++)[
+                    colorList.push("#" + ("00000" + ((Math.random() * 16777215 + 0.5) >> 0).toString(16)).slice(-6))
+                ]
+
+                new Clock(ctx, 310, 310, 300, colorList, randomAngle);
+            }
+        }
+
+        function btnclick() {
+            function convertCanvasToImage(canvas) {
+                var image = new Image();
+                image.src = canvas.toDataURL("image/png");
+                image.id = 'aaa';
+                return image;
+            }
+            const canvas = document.getElementById('tutorial');
+            document.querySelector('.output').innerHTML = '';
+            document.querySelector('.output').appendChild(convertCanvasToImage(canvas));
+        }
+
+        function download() {
+            var src = document.querySelector('#tutorial').toDataURL("image/png");
+            var $a = document.createElement('a');
+            $a.setAttribute("href", src);
+            $a.setAttribute("download", "劳力士.png");
+            var evObj = document.createEvent('MouseEvents');
+            evObj.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, true, false, 0, null);
+            $a.dispatchEvent(evObj);
+        }
+
+        function slice() {
+
+            function creatCanvas(x, y, width, height) {
+                var image = document.querySelector('#tutorial');
+                var canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.style.margin = '10px';
+                canvas.style.float = 'left';
+                ctx = canvas.getContext('2d');
+                ctx.drawImage(image, x, y, width, height, 0, 0, width, height);
+                return canvas;
+            }
+
+            if (document.getElementById('slicew').value && document.getElementById('sliceh').value) {
+                var image = document.querySelector('#tutorial');
+                var slicew = parseInt(document.getElementById('slicew').value);
+                var sliceh = parseInt(document.getElementById('sliceh').value);
+                if (slicew * sliceh < 100) {
+                    let imgW = image.width;
+                    let imgH = image.height;
+                    let width = imgW / slicew;
+                    let height = imgH / sliceh;
+                    document.querySelector('.output').innerHTML = '';
+                    for (let i = 0; i < slicew; i++) {
+                        let x = i * width;
+                        for (let j = 0; j < sliceh; j++) {
+                            let y = j * height;
+                            document.querySelector('.output').appendChild(creatCanvas(x, y, width, height));
+                        }
+                    }
+                } else {
+                    alert('切这么多份，你想卡死爹么？');
+                }
+            } else {
+                alert('切多少份啊');
+            }
+
+        }
+
+        document.getElementById('sliceh').addEventListener('click', function(e) {
+            e.stopPropagation();
+        }, false)
+        document.getElementById('slicew').addEventListener('click', function(e) {
+            e.stopPropagation();
+        }, false)
+    </script>
+</body>
+
+</html>
